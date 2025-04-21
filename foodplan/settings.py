@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     'core',     
     'recipes',   
     'users',       
-    'payments',
+    'payments.apps.PaymentsConfig',
     'bot',
 ]
 
