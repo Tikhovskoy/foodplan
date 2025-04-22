@@ -1,19 +1,25 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+
 from .models import Profile, Category
+
+User = get_user_model()
+
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display  = ('name',)
     search_fields = ('name',)
 
+
 class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
     verbose_name_plural = _("Профили")
     filter_horizontal = ('categories', 'liked', 'disliked')
+
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
@@ -27,8 +33,12 @@ class ProfileAdmin(admin.ModelAdmin):
         return ", ".join(c.name for c in obj.categories.all())
     get_categories.short_description = _("Категории")
 
+
+try:
+    admin.site.unregister(User)
+except admin.sites.NotRegistered:
+    pass
+
+@admin.register(User)
 class CustomUserAdmin(BaseUserAdmin):
     inlines = (ProfileInline,)
-
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
