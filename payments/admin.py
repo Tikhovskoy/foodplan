@@ -5,7 +5,7 @@ from .models import SubscriptionPlan, Subscription, PaymentRecord
 
 @admin.register(SubscriptionPlan)
 class SubscriptionPlanAdmin(admin.ModelAdmin):
-    list_display  = ("name", "price", "duration")
+    list_display = ("name", "price", "duration")
     search_fields = ("name",)
     fieldsets = (
         (None, {
@@ -19,9 +19,9 @@ class SubscriptionPlanAdmin(admin.ModelAdmin):
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display    = ("user", "plan", "start_date", "end_date", "amount")
-    list_filter     = ("plan", "start_date", "end_date")
-    search_fields   = ("user__username", "plan__name")
+    list_display = ("user", "plan", "start_date", "end_date", "amount")
+    list_filter = ("plan", "start_date", "end_date")
+    search_fields = ("user__username", "plan__name")
     readonly_fields = ("start_date", "amount")
 
     fieldsets = (
@@ -33,9 +33,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(PaymentRecord)
 class PaymentRecordAdmin(admin.ModelAdmin):
-    list_display    = ("telegram_payment_id", "subscription", "status", "created_at")
-    list_filter     = ("status", "created_at")
-    search_fields   = ("telegram_payment_id",)
+    list_display = ("telegram_payment_id", "subscription", "status", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("telegram_payment_id",)
     readonly_fields = ("created_at",)
 
     fieldsets = (

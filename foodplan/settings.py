@@ -9,7 +9,7 @@ load_dotenv(BASE_DIR / '.env')
 # Безопасность
 SECRET_KEY = os.getenv('SECRET_KEY', 'your-default-secret-key')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 # Локализация
 LANGUAGE_CODE = 'ru'
@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
     'core',     
     'recipes',   
     'users',       
@@ -95,10 +94,13 @@ STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Медиа-файлы
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Телеграм-бот
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN', '')
+DEBUG = True
+DEFAULT_HTTP_PROTOCOL = "http"
+BASE_URL = 'http://localhost:8000'
