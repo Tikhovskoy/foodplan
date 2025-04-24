@@ -6,9 +6,9 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 
 from telegram import Bot, Update
-from telegram.utils.request import Request
+# from telegram.utils.request import Request
 
-from .handlers import handle_update
+# from .handlers import handle_update
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +34,7 @@ def telegram_webhook(request, token):
         payload = json.loads(request.body.decode('utf-8'))
         bot = Bot(settings.TELEGRAM_TOKEN, request=Request())
         update = Update.de_json(payload, bot)
-        handle_update(update)
+        # handle_update(update)
     except Exception as e:
         logger.error(f"Webhook handling error: {e}", exc_info=True)
 

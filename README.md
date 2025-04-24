@@ -85,3 +85,6 @@ python manage.py migrate
 python manage.py createsuperuser
 python manage.py runserver
 ```
+## Для запуска бота
+`python manage.py runbot`
+Токен телеграм бота `BOT_TOKEN` в переменной окружения в приложении `bot`

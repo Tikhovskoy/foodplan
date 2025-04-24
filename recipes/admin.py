@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import mark_safe
-from .models import Recipe, Ingredient, RecipeIngredient
+from .models import Recipe, Ingredient, RecipeIngredient, RecipeStep
 
 
 class RecipeIngredientInline(admin.TabularInline):
@@ -9,18 +9,23 @@ class RecipeIngredientInline(admin.TabularInline):
     extra = 1
     min_num = 1
     fields = ("ingredient", "amount", "unit", "unit_cost")
-    autocomplete_fields = ("ingredient",)  # автодополнение при больших списках ингредиентов
+    autocomplete_fields = ("ingredient",)
+
+
+class RecipeStepInline(admin.TabularInline):
+    model = RecipeStep
+    extra = 1
 
 
 @admin.register(Recipe)
 class RecipeAdmin(admin.ModelAdmin):
-    list_display      = ("title", "image_preview", "display_categories", "estimated_cost")
-    list_filter       = ("categories",)
-    search_fields     = ("title",)
+    list_display = ("title", "image_preview", "display_categories", "estimated_cost")
+    list_filter = ("categories",)
+    search_fields = ("title",)
     filter_horizontal = ("categories",)
-    readonly_fields   = ("estimated_cost", "image_preview")
-    inlines           = [RecipeIngredientInline]
-    save_on_top       = True
+    readonly_fields = ("estimated_cost", "image_preview")
+    inlines = [RecipeIngredientInline, RecipeStepInline]
+    save_on_top = True
 
     fieldsets = (
         (None, {
@@ -44,6 +49,6 @@ class RecipeAdmin(admin.ModelAdmin):
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
-    list_display      = ("name",)
-    search_fields     = ("name",)
-    ordering          = ("name",)
+    list_display = ("name",)
+    search_fields = ("name",)
+    ordering = ("name",)

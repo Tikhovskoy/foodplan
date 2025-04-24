@@ -86,6 +86,19 @@ class Recipe(models.Model):
             total += ri.amount * cost
         return lines, total
 
+class RecipeStep(models.Model):
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="steps", verbose_name=_("Рецепт"))
+    order = models.PositiveIntegerField(_("Порядок шага"))
+    text = models.TextField(_("Описание шага"))
+    image = models.ImageField(_("Изображение шага"), upload_to="recipes/steps/", blank=True, null=True)
+
+    class Meta:
+        ordering = ["order"]
+        verbose_name = _("Шаг рецепта")
+        verbose_name_plural = _("Шаги рецепта")
+
+    def __str__(self):
+        return f"{self.order}. {self.text[:50]}"
 
 class RecipeIngredient(models.Model):
     UNIT_CHOICES = [
