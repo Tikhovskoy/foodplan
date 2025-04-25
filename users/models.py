@@ -1,7 +1,17 @@
-from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
+
+
+class User(AbstractUser):
+    """
+    Кастомная модель пользователя с поддержкой Telegram ID.
+    """
+    telegram_id = models.BigIntegerField(
+        _("Telegram ID"), unique=True, null=True, blank=True
+    )
+
 
 class Category(models.Model):
     """
@@ -20,10 +30,11 @@ class Category(models.Model):
 
 class Profile(models.Model):
     """
-    Расширение стандартного User для наших нужд.
+    Расширение пользователя дополнительными полями.
     """
     user = models.OneToOneField(
-        User, on_delete=models.CASCADE,
+        User,
+        on_delete=models.CASCADE,
         related_name='profile',
         verbose_name=_("Пользователь")
     )
@@ -66,7 +77,7 @@ class Profile(models.Model):
         return self.user.username
 
     def is_active_subscriber(self) -> bool:
-        return self.paid_until and self.paid_until >= timezone.now().date()
+        return bool(self.paid_until and self.paid_until >= timezone.now().date())
 
     def can_get_free_recipe(self) -> bool:
         today = timezone.now().date()

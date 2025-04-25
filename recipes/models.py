@@ -32,13 +32,18 @@ class Recipe(models.Model):
         default=Decimal("0.00"),
         editable=False
     )
+    is_active = models.BooleanField(
+        _("Активен"),
+        default=True,
+        help_text=_("Отображается ли рецепт пользователям")
+    )
     categories = models.ManyToManyField(
         "users.Category",
         verbose_name=_("Категории"),
         blank=True
     )
     ingredients = models.ManyToManyField(
-        Ingredient,
+        "Ingredient",
         through="RecipeIngredient",
         related_name="recipes",
         verbose_name=_("Ингредиенты")

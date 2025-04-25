@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'core',     
     'recipes',   
     'users',       
     'payments.apps.PaymentsConfig',
@@ -101,6 +100,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Телеграм-бот
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN', '')
-DEBUG = True
-DEFAULT_HTTP_PROTOCOL = "http"
-BASE_URL = 'http://localhost:8000'
+
+AUTH_USER_MODEL = 'users.User'
+
