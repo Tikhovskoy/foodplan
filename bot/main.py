@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 # ───── Импорт хендлеров ─────
 from bot.handlers.start import router as start_router
 from bot.handlers.recipe import router as recipe_router
+from bot.handlers.subscribe import router as subscribe_router
 # TODO: shopping_router, settings_router...
 
 # ───── Создание и запуск ─────
@@ -33,6 +34,7 @@ async def main():
 
     dp.include_router(start_router)
     dp.include_router(recipe_router)
+    dp.include_router(subscribe_router)
 
     logger.info("Бот запущен...")
     await dp.start_polling(bot)
