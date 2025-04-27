@@ -86,26 +86,34 @@ async def next_step(callback: CallbackQuery, state: FSMContext):
             step=steps[next_index],
             current_step=next_index + 1,
             total_steps=len(steps),
-            show_next_button=show_next_button
+            show_next_button=show_next_button,
+            recipe_id=recipe_id
         )
     except Exception as e:
         print(f"Error in next_step: {e}")
         await callback.message.answer("⚠️ Произошла ошибка при переходе к следующему шагу.")
 
-async def show_step(message: Message, step, current_step: int, total_steps: int, show_next_button=True):
+
+async def show_step(message: Message, step, current_step: int, total_steps: int, show_next_button=True, recipe_id=None):
     text = f"Шаг {current_step}/{total_steps}:\n\n{step.text}"
+
+    if current_step == total_steps:
+        reply_markup = get_back_to_recipe_kb(recipe_id)
+    else:
+        reply_markup = get_step_navigation_kb()
+
     await send_recipe(
         message,
         caption=text,
         image_field=step.image,
-        reply_markup=get_step_navigation_kb() if show_next_button else None
+        reply_markup=reply_markup
     )
 
 @router.callback_query(F.data.startswith("back_to_recipe_"))
 async def back_to_recipe(callback: CallbackQuery, state: FSMContext):
     try:
         recipe_id = int(callback.data.split("_")[3])
-        recipe = await recipe_service.get_recipe(recipe_id)
+        recipe = await recipe_service._recipes.get(recipe_id)
 
         caption = f"🍽 Ваш рецепт:\n\n📓 {recipe.title}"
         await send_recipe(

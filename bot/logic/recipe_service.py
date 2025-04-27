@@ -46,3 +46,13 @@ class RecipeService:
         if kind not in ("like", "dislike"):
             raise BotLogicError("Feedback kind must be 'like' or 'dislike'")
         self._fb.save_feedback(telegram_id, recipe_id, kind)
+
+    def get_recipe(self, recipe_id: int) -> Recipe:
+        """
+        Возвращает рецепт по ID.
+        Бросает RecipeNotFound, если рецепт не найден.
+        """
+        recipe = self._recipes.get(recipe_id)
+        if not recipe:
+            raise RecipeNotFound(f"Рецепт с ID {recipe_id} не найден.")
+        return recipe
