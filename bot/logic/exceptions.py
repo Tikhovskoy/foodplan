@@ -16,6 +16,9 @@ class PlannerError(BotLogicError):
 class ShoppingError(BotLogicError):
     """Ошибка при генерации списка покупок."""
 
+class BotError(BotLogicError):
+    """Общее исключение для адаптеров Telegram-бота."""
+
 class RecipeAlreadyLiked(Exception):
     pass
 

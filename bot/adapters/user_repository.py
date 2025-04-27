@@ -1,12 +1,11 @@
-from bot.logic.interfaces import IUserPreferencesRepository
-from bot.logic.dto import UserPreferences
-from bot.logic.exceptions import PreferenceError
-
+from asgiref.sync import sync_to_async
 from users.models import Profile, Category
 from recipes.models import Recipe
+from bot.logic.dto import UserPreferences
+from bot.exceptions import PreferenceError
 
-
-class DjangoUserPreferencesRepository(IUserPreferencesRepository):
+class DjangoUserPreferencesRepository:
+    @sync_to_async
     def get(self, telegram_id: int) -> UserPreferences:
         profile = Profile.objects.select_related("user").get(user__telegram_id=telegram_id)
 
@@ -20,10 +19,12 @@ class DjangoUserPreferencesRepository(IUserPreferencesRepository):
             disliked_recipes=disliked_ids,
         )
 
+    @sync_to_async
     def save(self, telegram_id: int, prefs: UserPreferences) -> None:
         profile = Profile.objects.select_related("user").get(user__telegram_id=telegram_id)
 
         profile.categories.clear()
+
         for name in prefs.categories:
             try:
                 category = Category.objects.get(name__iexact=name)

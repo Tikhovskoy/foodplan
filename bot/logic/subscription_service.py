@@ -1,22 +1,13 @@
-from bot.logic.interfaces import ISubscriptionRepository
-from bot.logic.exceptions import SubscriptionError
+from bot.adapters.subscription_repository import DjangoSubscriptionRepository
 
 class SubscriptionService:
-    def __init__(self, sub_repo: ISubscriptionRepository):
-        self._subs = sub_repo
+    def __init__(self, repository: DjangoSubscriptionRepository):
+        self._repository = repository
 
-    def check_active(self, telegram_id: int) -> bool:
-        """Проверяет, есть ли у пользователя активная подписка."""
-        try:
-            return self._subs.is_active(telegram_id)
-        except Exception as e:
-            raise SubscriptionError(f"Ошибка при проверке подписки: {e}")
+    def is_active(self, telegram_id: int) -> bool:
+        """ Проверяет активность подписки. """
+        return self._repository.is_active(telegram_id)
 
-    def extend(self, telegram_id: int, days: int) -> None:
-        """Продлевает подписку на days дней."""
-        if days <= 0:
-            raise SubscriptionError("Срок продления должен быть > 0")
-        try:
-            self._subs.extend(telegram_id, days)
-        except Exception as e:
-            raise SubscriptionError(f"Не удалось продлить подписку: {e}")
+    def extend_subscription(self, telegram_id: int, days: int) -> None:
+        """ Продлевает подписку на заданное количество дней. """
+        self._repository.extend(telegram_id, days)

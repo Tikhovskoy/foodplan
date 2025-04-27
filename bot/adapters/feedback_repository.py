@@ -1,9 +1,11 @@
 from typing import List
 from users.models import Profile
 from recipes.models import Recipe
-from bot.logic.interfaces import IFeedbackRepository
+from asgiref.sync import sync_to_async
 
-class DjangoFeedbackRepository(IFeedbackRepository):
+class DjangoFeedbackRepository:
+
+    @sync_to_async
     def list_disliked(self, telegram_id: int) -> List[int]:
         try:
             profile = Profile.objects.get(user__telegram_id=telegram_id)

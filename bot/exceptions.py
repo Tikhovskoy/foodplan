@@ -9,3 +9,11 @@ class RecipeNotFound(BotError):
 class SubscriptionExpired(BotError):
     """Подписка истекла."""
     pass
+
+class PreferenceError(Exception):
+    """ Исключение для ошибок при работе с предпочтениями пользователя """
+    pass
+
+class BotLogicError(Exception):
+    """ Исключение для ошибок логики бота """
+    pass

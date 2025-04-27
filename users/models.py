@@ -3,7 +3,6 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-
 class User(AbstractUser):
     """
     Кастомная модель пользователя с поддержкой Telegram ID.
@@ -11,7 +10,6 @@ class User(AbstractUser):
     telegram_id = models.BigIntegerField(
         _("Telegram ID"), unique=True, null=True, blank=True
     )
-
 
 class Category(models.Model):
     """
@@ -27,7 +25,6 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-
 class Profile(models.Model):
     """
     Расширение пользователя дополнительными полями.
@@ -39,13 +36,32 @@ class Profile(models.Model):
         verbose_name=_("Пользователь")
     )
 
+    # Новые поля предпочтений
+    vegan = models.BooleanField(
+        _("Веганское питание"),
+        default=False,
+        help_text=_("Учитывать блюда без продуктов животного происхождения")
+    )
+    gluten_free = models.BooleanField(
+        _("Без глютена"),
+        default=False,
+        help_text=_("Не включать блюда, содержащие глютен")
+    )
+    budget = models.DecimalField(
+        _("Максимальная стоимость блюда, ₽"),
+        max_digits=10,
+        decimal_places=2,
+        null=True,
+        blank=True,
+        help_text=_("Если задано, будем выбирать рецепты до этой стоимости")
+    )
+
     categories = models.ManyToManyField(
         Category,
         verbose_name=_("Категории"),
         blank=True,
         help_text=_("Выберите категории блюд, которые вам интересны")
     )
-
     liked = models.ManyToManyField(
         'recipes.Recipe',
         related_name='liked_by',
