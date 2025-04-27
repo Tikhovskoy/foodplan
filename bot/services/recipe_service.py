@@ -61,22 +61,30 @@ class RecipeService:
         if not steps:
             raise RecipeNotFound("Шаги для рецепта не найдены.")
 
-        ingredients = []
+        unique_ingredients = {}
 
+        # Перебираем шаги и получаем ингредиенты через связку RecipeIngredient
         for step in steps:
             logger.info("Обрабатываем шаг %d", step.id)
 
             recipe_ingredients_qs = RecipeIngredient.objects.filter(recipe=step.recipe).select_related('ingredient')
             recipe_ingredients = list(recipe_ingredients_qs)
 
+            # Добавляем ингредиенты только если они еще не были добавлены
             for ri in recipe_ingredients:
-                ingredients.append(ri)  
+                ingredient_name = ri.ingredient.name
+                if ingredient_name not in unique_ingredients:
+                    unique_ingredients[ingredient_name] = {
+                        "amount": ri.amount,
+                        "unit": ri.get_unit_display()
+                    }
 
-        if not ingredients:
+        if not unique_ingredients:
             raise RecipeNotFound("Ингредиенты для рецепта не найдены.")
 
-        logger.info("Найдено ингредиентов: %d", len(ingredients))
-        return ingredients
+        logger.info("Найдено ингредиентов: %d", len(unique_ingredients))
+        return unique_ingredients
+
 
 
 recipe_service = RecipeService(

@@ -145,10 +145,8 @@ async def show_ingredients(callback: CallbackQuery):
 
         if ingredients:
             text_lines = []
-            for ri in ingredients:
-                line = f"- {ri.ingredient.name}"
-                if ri.amount:
-                    line += f" — {ri.amount} {ri.get_unit_display()}"
+            for name, data in ingredients.items():
+                line = f"- {name} — {data['amount']} {data['unit']}"
                 text_lines.append(line)
 
             text = "\n".join(text_lines)
