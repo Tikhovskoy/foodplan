@@ -145,10 +145,10 @@ async def show_ingredients(callback: CallbackQuery):
 
         if ingredients:
             text_lines = []
-            for ingredient in ingredients:
-                line = f"- {ingredient.ingredient.name}"
-                if ingredient.amount:
-                    line += f" — {ingredient.amount} {ingredient.get_unit_display()}"
+            for ri in ingredients:
+                line = f"- {ri.ingredient.name}"
+                if ri.amount:
+                    line += f" — {ri.amount} {ri.get_unit_display()}"
                 text_lines.append(line)
 
             text = "\n".join(text_lines)
@@ -158,6 +158,7 @@ async def show_ingredients(callback: CallbackQuery):
     except Exception as e:
         print(f"Ошибка при получении ингредиентов: {e}")
         await callback.message.answer("⚠️ Ошибка при получении ингредиентов.")
+
 
 @router.callback_query(F.data.startswith("dislike_"))
 async def dislike_recipe(callback: CallbackQuery, state: FSMContext):

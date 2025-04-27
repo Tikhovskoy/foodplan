@@ -51,6 +51,14 @@ class RecipeIngredient(models.Model):
     def __str__(self):
         return f"{self.ingredient.name}: {self.amount} {self.get_unit_display()}"
 
+    def get_ingredient_info(self):
+        return {
+            "name": self.ingredient.name,
+            "amount": self.amount,
+            "unit": self.get_unit_display()
+        }
+
+
 
 class Recipe(models.Model):
     title = models.CharField(_("Название блюда"), max_length=200)
