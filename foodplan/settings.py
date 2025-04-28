@@ -40,13 +40,13 @@ else:
 # Приложения
 INSTALLED_APPS = [
     'django.contrib.admin',
+    'users',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'recipes',   
-    'users',       
+    'recipes',
     'payments.apps.PaymentsConfig',
     'bot',
 ]

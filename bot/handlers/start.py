@@ -39,33 +39,20 @@ async def start_handler(message: Message):
 
 @sync_to_async
 def get_random_recipe_data():
-    recipes = list(Recipe.objects.all())
+    recipes = list(Recipe.objects.filter(is_active=True))
     if not recipes:
         return None
 
     recipe = random.choice(recipes)
 
-    def get_unit_display(unit_code):
-        UNIT_CHOICES = [
-            ("pcs", "шт."),
-            ("g", "г"),
-            ("kg", "кг"),
-            ("tsp", "ч. л."),
-            ("tbsp", "ст. л."),
-            ("cup", "стакан"),
-        ]
-        for code, name in UNIT_CHOICES:
-            if code == unit_code:
-                return name
-        return unit_code
-
     ingredients = [
-        f"• {ri.ingredient.name} — {ri.amount} {get_unit_display(ri.unit)}"
+        f"{ri.ingredient.name} — {ri.amount} {ri.get_unit_display()}"
         for ri in recipe.recipeingredient_set.all()
     ]
 
     steps = [
-        f"{s.order}. {s.text}" for s in recipe.steps.all().order_by("order")
+        f"{s.order}. {s.text}"
+        for s in recipe.steps.all().order_by("order")
     ]
 
     return {
@@ -74,10 +61,13 @@ def get_random_recipe_data():
         "steps": steps,
         "image": FSInputFile(recipe.image.path) if recipe.image else None,
         "step_images": [
-            FSInputFile(s.image.path) if s.image else None for s in recipe.steps.all().order_by("order")
+            FSInputFile(s.image.path) if s.image else None
+            for s in recipe.steps.all().order_by("order")
         ],
         "price": recipe.estimated_cost,
     }
+
+
 @router.callback_query(lambda c: c.data == "recipe")
 async def get_recipe(callback: types.CallbackQuery):
     await callback.answer()
