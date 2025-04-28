@@ -35,20 +35,29 @@ async def show_subscription_offer(message: types.Message):
 async def handle_subscription_selection(callback: types.CallbackQuery):
     plan_id = int(callback.data.split("_")[1])
     plan = await SubscriptionPlan.objects.filter(id=plan_id).afirst()
-
+    
     if not plan:
         await callback.answer("Подписка не найдена", show_alert=True)
         return
-
+    
+    description = (
+        f"{plan.description}\n\n"
+        f"Длительность: {plan.duration} дней\n"
+        f"Цена: {plan.price}₽"
+    )
+    
     await callback.bot.send_invoice(
-        chat_id=callback.message.chat.id,
-        title=f"Подписка {plan.name}",
-        description=plan.description,
+        chat_id=callback.from_user.id,
+        title=f"Подписка: {plan.name}",
+        description=description,
         payload=f"subscription_{plan.id}",
         provider_token="PAYMENT_TOKEN",    # Нужно будет вставить токен оплаты
         currency="RUB",
-        prices=[LabeledPrice(label=plan.name, amount=int(plan.price * 100))],
-        start_parameter="subscription"
+        prices=[LabeledPrice(
+            label=plan.name,
+            amount=int(plan.price * 100)
+        ],
+        start_parameter=f"subscription_{plan.id}",
     )
     await callback.answer()
 
