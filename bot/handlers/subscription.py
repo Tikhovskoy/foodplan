@@ -1,85 +1,82 @@
-import yookassa
-from aiogram import Router, types, F
-from aiogram.types import PreCheckoutQuery
+import os
+from datetime import date, timedelta
+from dotenv import load_dotenv
+
+from aiogram import Router, types, F, Bot
+from aiogram.types import (
+    LabeledPrice,
+    InlineKeyboardMarkup,
+    InlineKeyboardButton,
+    PreCheckoutQuery,
+)
+from asgiref.sync import sync_to_async
+
 from payments.models import SubscriptionPlan, Subscription, PaymentRecord
 from users.models import TelegramUser
-from datetime import datetime
-import os
-from dotenv import load_dotenv
-import logging
+from bot.keyboards.reply import get_meal_type_kb
 
 load_dotenv()
-
-SHOP_ID = os.getenv("YOOKASSA_SHOP_ID")
-SECRET_KEY = os.getenv("YOOKASSA_SECRET_KEY")
-
-yookassa.Configuration.account_id = SHOP_ID
-yookassa.Configuration.secret_key = SECRET_KEY
-
-logger = logging.getLogger(__name__)
 router = Router()
+PAYMENT_TOKEN = os.getenv("TELEGRAM_PAYMENT_TOKEN")
 
-@router.callback_query(F.data.startswith("subscribe_"))
-async def handle_subscription_selection(callback: types.CallbackQuery):
-    plan_id = int(callback.data.split("_")[1])
+
+@router.callback_query(F.data == "buy_subscription")
+async def handle_buy_subscription(callback: types.CallbackQuery):
+    await callback.answer()
+    plans = await sync_to_async(list)(SubscriptionPlan.objects.all())
+
+    if not plans:
+        await callback.message.answer("Тарифы пока не настроены.")
+        return
+
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=plan.name, callback_data=f"pay_plan_{plan.id}")]
+        for plan in plans
+    ])
+
+    await callback.message.answer("💳 Выберите тариф для оплаты:", reply_markup=keyboard)
+
+
+@router.callback_query(F.data.startswith("pay_plan_"))
+async def handle_pay_plan(callback: types.CallbackQuery, bot: Bot):
+    await callback.answer()
+    plan_id = int(callback.data.split("_")[-1])
     plan = await SubscriptionPlan.objects.filter(id=plan_id).afirst()
 
     if not plan:
-        await callback.answer("Подписка не найдена", show_alert=True)
+        await callback.message.answer("Ошибка: тариф не найден.")
         return
 
-    user_id = callback.from_user.id
-    user = await TelegramUser.objects.filter(telegram_id=user_id).afirst()
+    prices = [LabeledPrice(label=plan.name, amount=int(plan.price * 100))]
 
-    if not user:
-        await callback.answer("Пользователь не найден", show_alert=True)
-        return
+    payload = f"subscription_{plan.id}"
+    await bot.send_invoice(
+        chat_id=callback.from_user.id,
+        title=f"Подписка {plan.name}",
+        description=plan.description or f"Подписка на {plan.name}",
+        payload=payload,
+        provider_token=PAYMENT_TOKEN,
+        currency="RUB",
+        prices=prices,
+        start_parameter="foodplan-payment"
+    )
 
-    has_active_subscription = await Subscription.objects.filter(
-        user=user,
-        end_date__gte=datetime.now()
-    ).aexists()
 
-    if has_active_subscription:
-        await callback.message.answer("✅ Ваша подписка уже активна.")
-    else:
-        payment = yookassa.Payment.create(
-            amount={"value": str(plan.price), "currency": "RUB"},
-            capture=True,
-            description=f"Подписка на {plan.name}",
-            metadata={"user_id": user_id, "plan_id": plan.id},
-            confirmation={"type": "redirect", "return_url": "https://t.me/your_bot"},
-            receipt={
-                "items": [
-                    {
-                        "description": plan.name,
-                        "quantity": "1",
-                        "amount": {"value": str(plan.price), "currency": "RUB"},
-                        "vat_code": 1,
-                    }
-                ]
-            }
-        )
+@router.pre_checkout_query()
+async def pre_checkout_query(pre_checkout: PreCheckoutQuery):
+    await pre_checkout.answer(ok=True)
 
-        payment_url = payment.confirmation.confirmation_url
-        await callback.bot.send_message(
-            callback.message.chat.id,
-            f"Перейдите по ссылке для оплаты подписки: {payment_url}",
-        )
-        await callback.answer()
 
 @router.message(F.successful_payment)
-async def process_successful_payment(message: types.Message):
+async def successful_payment(message: types.Message):
     payload = message.successful_payment.invoice_payload
-
     if not payload.startswith("subscription_"):
         return
 
     plan_id = int(payload.split("_")[1])
     plan = await SubscriptionPlan.objects.filter(id=plan_id).afirst()
-
     if not plan:
-        await message.answer("Ошибка: План подписки не найден.")
+        await message.answer("Ошибка: тариф не найден.")
         return
 
     user, _ = await TelegramUser.objects.aget_or_create(
@@ -94,7 +91,8 @@ async def process_successful_payment(message: types.Message):
     subscription = await Subscription.objects.acreate(
         user=user,
         plan=plan,
-        amount=message.successful_payment.total_amount / 100
+        amount=plan.price,
+        end_date=date.today() + timedelta(days=plan.duration)
     )
 
     await PaymentRecord.objects.acreate(
@@ -104,10 +102,11 @@ async def process_successful_payment(message: types.Message):
     )
 
     await message.answer(
-        f"Подписка на {plan.name} активирована!\n"
-        f"Спасибо за доверие!"
+        f"✅ Подписка на {plan.name} активирована. Приятного использования!"
     )
 
-@router.pre_checkout_query()
-async def process_pre_checkout(pre_checkout_query: PreCheckoutQuery):
-    await pre_checkout_query.answer(ok=True)
+    keyboard = await get_meal_type_kb()
+    await message.answer(
+        "🍽 Выберите время приёма пищи:",
+        reply_markup=keyboard
+)

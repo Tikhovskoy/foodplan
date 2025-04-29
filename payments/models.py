@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from users.models import TelegramUser 
 
 
 class SubscriptionPlan(models.Model):
@@ -41,10 +42,10 @@ class Subscription(models.Model):
     Активная подписка пользователя.
     """
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        verbose_name=_("Пользователь")
-    )
+    TelegramUser,
+    on_delete=models.CASCADE,
+    verbose_name=_("Пользователь")
+)
     plan = models.ForeignKey(
         SubscriptionPlan,
         on_delete=models.CASCADE,

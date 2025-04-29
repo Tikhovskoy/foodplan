@@ -37,10 +37,10 @@ class MealTimeAdmin(admin.ModelAdmin):
 class RecipeAdmin(admin.ModelAdmin):
     list_display = (
         "title", "image_preview",
-        "is_vegan", "is_gluten_free", "budget", "is_active",
+        "is_active",
         "display_categories", "display_meal_times",
     )
-    list_filter = ("is_vegan", "is_gluten_free", "is_active", "categories", "meal_times")
+    list_filter = ("is_active", "categories", "meal_times")
     search_fields = ("title",)
     filter_horizontal = ("categories", "meal_times")
     readonly_fields = ("created_at", "updated_at", "image_preview")
@@ -51,7 +51,6 @@ class RecipeAdmin(admin.ModelAdmin):
         (None, {
             "fields": (
                 "title", "description", "image", "image_preview",
-                "is_vegan", "is_gluten_free",
                 "budget", "is_active", "categories", "meal_times",
             ),
         }),

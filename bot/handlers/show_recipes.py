@@ -37,7 +37,6 @@ async def next_recipe(callback: CallbackQuery, state: FSMContext):
             )
             return
 
-        # Получаем текущий рецепт
         recipe_id = recipe_ids[current_index]
         recipe = await recipe_service.get_recipe(recipe_id)
 
@@ -45,7 +44,6 @@ async def next_recipe(callback: CallbackQuery, state: FSMContext):
             await callback.message.answer("⚠️ Рецепт не найден.")
             return
 
-        # Показываем рецепт с описанием
         caption = f"📖 {recipe.title}"
         if recipe.description:
             caption += f"\n\n📝 {recipe.description}"
@@ -57,7 +55,6 @@ async def next_recipe(callback: CallbackQuery, state: FSMContext):
             reply_markup=get_recipe_main_kb(recipe.id)
         )
 
-        # Обновляем индекс текущего рецепта
         await state.update_data(current_index=current_index + 1)
 
     except Exception as e:

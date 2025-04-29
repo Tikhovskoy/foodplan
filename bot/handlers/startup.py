@@ -30,7 +30,6 @@ async def cmd_start(message: types.Message):
         await message.answer("Произошла ошибка при регистрации. Пожалуйста, попробуйте позже.")
         return
 
-    # Проверяем активную подписку
     has_active_subscription = await Subscription.objects.filter(
         user=user,
         end_date__gte=datetime.now()
