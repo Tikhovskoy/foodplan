@@ -1,70 +1,91 @@
 from aiogram import Router, F
-from aiogram.filters import Command
-from aiogram.types import Message, CallbackQuery, ChatMemberUpdated
+from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
+from bot.keyboards.reply import get_subscription_kb, get_meal_type_kb
+from bot.states import MealTypeStates
+from bot.shared.send_tools import send_recipe
+from users.models import TelegramUser
+from recipes.models import Recipe
+from random import choice
 from asgiref.sync import sync_to_async
+from django.utils import timezone
+import logging
 
-from bot.states import SubscriptionStates, MealTypeStates
-from bot.keyboards.reply import get_start_kb, get_subscription_kb, get_meal_type_kb
-from bot.services.subscription_service import subscription_service
-from bot.services.profile_service import profile_service
+logger = logging.getLogger(__name__)
 
 router = Router()
 
-@router.message(Command("start"))
+@router.message(F.text == "/start")
 async def cmd_start(message: Message, state: FSMContext):
-    try:
+    await state.clear()
+
+    user, created = await sync_to_async(TelegramUser.objects.get_or_create)(
+        telegram_id=message.from_user.id,
+        defaults={
+            "username": message.from_user.username or f"tg_{message.from_user.id}",
+            "first_name": message.from_user.first_name or "",
+            "last_name": message.from_user.last_name or ""
+        }
+    )
+
+    if user.has_active_subscription():
+        meal_type_kb = await get_meal_type_kb()
         await message.answer(
-            "👋 Добро пожаловать в FoodPlan!\n\n"
-            "🚀 Нажмите кнопку ниже, чтобы начать!",
-            reply_markup=get_start_kb()
+            "🍽 Выберите время приёма пищи:",
+            reply_markup=meal_type_kb
         )
-    except Exception as e:
-        print(f"Error in cmd_start: {e}")
-        await message.answer("⚠️ Произошла ошибка при запуске бота.")
+        await state.set_state(MealTypeStates.waiting_for_meal_type)
+    else:
+        buttons = [
+            ("💳 Оформить подписку", "buy_subscription"),
+            ("🍽 Получить бесплатный рецепт", "get_free_recipe"),
+        ]
+        await message.answer(
+            "🔒 У вас нет активной подписки. Вы можете оформить подписку или получить бесплатный рецепт:",
+            reply_markup=get_subscription_kb(buttons)
+        )
 
-@router.callback_query(F.data == "start")
-async def on_start_button(callback: CallbackQuery, state: FSMContext):
+@router.callback_query(F.data == "get_free_recipe")
+async def get_free_recipe(callback: CallbackQuery, state: FSMContext):
     try:
-        await start_flow(callback.message, state)
-        await callback.answer()
-    except Exception as e:
-        print(f"Error in on_start_button: {e}")
-        await callback.message.answer("⚠️ Произошла ошибка при запуске.")
-        await callback.answer()
+        user = await sync_to_async(TelegramUser.objects.get)(telegram_id=callback.from_user.id)
 
-@router.chat_member()
-async def on_user_join(event: ChatMemberUpdated, state: FSMContext):
-    try:
-        if event.new_chat_member.status == "member":
-            await event.chat.send_message(
-                "👋 Добро пожаловать в FoodPlan!\n\n"
-                "🚀 Нажмите кнопку ниже, чтобы начать!",
-                reply_markup=get_start_kb()
-            )
-    except Exception as e:
-        print(f"Error in on_user_join: {e}")
+        if not user.can_get_free_recipe():
+            await callback.message.answer("⚠️ Сегодня вы уже получили бесплатный рецепт. Приходите завтра!")
+            await callback.answer()
+            return
 
-async def start_flow(chat_or_message, state: FSMContext):
-    try:
+        recipes = await sync_to_async(list)(Recipe.objects.filter(is_active=True))
+
+        if not recipes:
+            await callback.message.answer("⚠️ Рецепты пока отсутствуют. Попробуйте позже.")
+            await callback.answer()
+            return
+
+        recipe = choice(recipes)
+
+        caption = f"🍽 Ваш рецепт:\n\n📓 {recipe.title}\n\n📝 {recipe.description}"
+        await send_recipe(
+            callback.message,
+            caption=caption,
+            image_field=recipe.image,
+            reply_markup=None
+        )
+
+        user.last_free_recipe = timezone.now().date()
+        await sync_to_async(user.save)()
+
         await state.clear()
-        user_id = chat_or_message.from_user.id if hasattr(chat_or_message, 'from_user') else chat_or_message.id
 
-        await profile_service.get_or_create_profile(user_id)
-        is_active = await subscription_service.check_active(user_id)
+        await callback.message.answer(
+            "🚀 Для полного доступа ко всем рецептам, диетам и функциям бота оформите подписку!",
+            reply_markup=get_subscription_kb([
+                ("💳 Оформить подписку", "buy_subscription"),
+            ])
+        )
 
-        if is_active:
-            await chat_or_message.answer(
-                "🍽 Выберите тип питания:",
-                reply_markup=get_meal_type_kb()
-            )
-            await state.set_state(MealTypeStates.waiting_for_meal_type)
-        else:
-            await chat_or_message.answer(
-                "🔒 Хотите оформить подписку?",
-                reply_markup=get_subscription_kb()
-            )
-            await state.set_state(SubscriptionStates.waiting_for_subscription_choice)
+        await callback.answer()
+
     except Exception as e:
-        print(f"Error in start_flow: {e}")
-        await chat_or_message.answer("⚠️ Ошибка при запуске, попробуйте позже.")
+        logger.exception("Ошибка при выдаче бесплатного рецепта")
+        await callback.message.answer("⚠️ Произошла ошибка при получении бесплатного рецепта.")

@@ -11,7 +11,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "foodplan.settings")
 django.setup()
 
 # Модели
-from users.models import User, Profile, Category
+from users.models import TelegramUser, Profile, Category
 from recipes.models import Ingredient, Recipe, RecipeIngredient, RecipeStep
 from payments.models import SubscriptionPlan, Subscription
 

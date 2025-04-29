@@ -4,7 +4,6 @@ from aiogram.fsm.context import FSMContext
 from decimal import Decimal, InvalidOperation
 
 from bot.states import BudgetStates
-from bot.handlers.show_recipes import send_recipes
 
 router = Router()
 
@@ -20,5 +19,4 @@ async def handle_budget(message: Message, state: FSMContext):
 
     await state.update_data(budget=str(budget))
 
-    await send_recipes(message, state)
     await state.clear()

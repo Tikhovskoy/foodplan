@@ -1,5 +1,5 @@
 import pytest
-from users.models import User, Profile
+from users.models import TelegramUser, Profile
 from recipes.models import Recipe
 from bot.logic.user_service import UserService
 from bot.logic.exceptions import RecipeAlreadyLiked, RecipeAlreadyDisliked

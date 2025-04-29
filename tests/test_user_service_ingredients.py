@@ -2,7 +2,7 @@ import pytest
 from datetime import timedelta
 from django.utils import timezone
 
-from users.models import User, Profile
+from users.models import TelegramUser, Profile
 from bot.logic.user_service import UserService
 from bot.adapters.user_repository import DjangoUserPreferencesRepository
 

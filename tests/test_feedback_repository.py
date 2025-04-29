@@ -1,5 +1,5 @@
 import pytest
-from users.models import User, Profile
+from users.models import TelegramUser, Profile
 from recipes.models import Recipe
 from bot.adapters.feedback_repository import DjangoFeedbackRepository
 

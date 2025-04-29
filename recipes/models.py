@@ -1,107 +1,56 @@
-from decimal import Decimal, InvalidOperation
+# recipes/models.py
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
-from django.core.validators import MinValueValidator
-from django.utils.html import mark_safe
-from django.db.models import F, Sum, ExpressionWrapper, DecimalField
+from django.utils import timezone
 
+class Category(models.Model):
+    """Категории рецептов"""
+    name = models.CharField(_("Название категории"), max_length=100, unique=True)
 
-class Ingredient(models.Model):
-    name = models.CharField(_("Название"), max_length=100)
-    unit_cost = models.DecimalField(
-        _("Цена за единицу"),
-        max_digits=8,
-        decimal_places=2,
-        default=Decimal("0.00"),
-        help_text=_("Цена за одну единицу ингредиента"),
-    )
+    class Meta:
+        verbose_name = _("Категория")
+        verbose_name_plural = _("Категории")
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
 
-    class Meta:
-        verbose_name = _("Ингредиент")
-        verbose_name_plural = _("Ингредиенты")
-
-
-class RecipeIngredient(models.Model):
-    class UnitChoices(models.TextChoices):
-        GRAM = 'g', _('грамм')
-        MILLILITER = 'ml', _('миллилитр')
-        PIECE = 'pcs', _('штука')
-        TABLESPOON = 'tbsp', _('столовая ложка')
-        TEASPOON = 'tsp', _('чайная ложка')
-
-    recipe = models.ForeignKey('Recipe', on_delete=models.CASCADE, related_name='recipe_ingredients', verbose_name=_('Рецепт'))
-    ingredient = models.ForeignKey('Ingredient', on_delete=models.CASCADE, verbose_name=_('Ингредиент'))
-    amount = models.DecimalField(
-        _("Количество"),
-        max_digits=10,
-        decimal_places=2,
-        blank=True,
-        null=True,
-        validators=[MinValueValidator(Decimal("0.01"))],
-    )
-    unit = models.CharField(_("Единица"), max_length=20, choices=UnitChoices.choices, blank=True)
+class MealTime(models.Model):
+    """Время приёма пищи: Завтрак, Обед, Ужин"""
+    name = models.CharField(_("Название времени приёма пищи"), max_length=50, unique=True)
 
     class Meta:
-        verbose_name = _('Ингредиент в рецепте')
-        verbose_name_plural = _('Ингредиенты в рецепте')
+        verbose_name = _("Время приёма пищи")
+        verbose_name_plural = _("Времена приёма пищи")
+        ordering = ["name"]
 
     def __str__(self):
-        return f"{self.ingredient.name}: {self.amount} {self.get_unit_display()}"
-
-    def get_ingredient_info(self):
-        return {
-            "name": self.ingredient.name,
-            "amount": self.amount,
-            "unit": self.get_unit_display()
-        }
-
-
+        return self.name
 
 class Recipe(models.Model):
-    title = models.CharField(_("Название блюда"), max_length=200)
-    image = models.ImageField(
-        _("Изображение блюда"),
-        upload_to="recipes/%Y/%m/%d/",
-        blank=True,
-        null=True,
-    )
-    estimated_cost = models.DecimalField(
-        _("Ориентировочная стоимость"),
+    """Рецепты"""
+    title = models.CharField(_("Название рецепта"), max_length=200)
+    description = models.TextField(_("Описание рецепта"))
+    image = models.ImageField(_("Изображение"), upload_to="recipes/", blank=True, null=True)
+
+    is_vegan = models.BooleanField(_("Подходит для веганов"), default=False)
+    is_gluten_free = models.BooleanField(_("Без глютена"), default=False)
+    budget = models.DecimalField(
+        _("Ориентировочная стоимость, ₽"),
         max_digits=10,
         decimal_places=2,
-        default=Decimal("0.00"),
-        editable=False,
-    )
-
-    is_vegan = models.BooleanField(
-        _("Веганское блюдо"),
-        default=False,
-        help_text=_("Подходит ли блюдо для веганов"),
-    )
-    is_gluten_free = models.BooleanField(
-        _("Без глютена"),
-        default=False,
-        help_text=_("Не содержит ли блюдо глютен"),
-    )
-    is_active = models.BooleanField(
-        _("Активен"),
-        default=True,
-        help_text=_("Отображается ли рецепт пользователям"),
-    )
-    categories = models.ManyToManyField(
-        "users.Category",
-        verbose_name=_("Категории"),
+        null=True,
         blank=True,
+        help_text=_("Необязательное поле для указания стоимости приготовления.")
     )
-    ingredients = models.ManyToManyField(
-        "recipes.Ingredient",
-        through="recipes.RecipeIngredient",
-        related_name="recipes",
-        verbose_name=_("Ингредиенты"),
-    )
+    is_active = models.BooleanField(_("Активен"), default=True)
+
+    categories = models.ManyToManyField(Category, verbose_name=_("Категории"), blank=True)
+    meal_times = models.ManyToManyField(MealTime, verbose_name=_("Время приёма пищи"), blank=True)
+
+    created_at = models.DateTimeField(_("Дата создания"), auto_now_add=True)
+    updated_at = models.DateTimeField(_("Обновлено"), auto_now=True)
 
     class Meta:
         verbose_name = _("Рецепт")
@@ -111,52 +60,31 @@ class Recipe(models.Model):
     def __str__(self):
         return self.title
 
-    def image_preview(self):
-        if self.image:
-            return mark_safe(f'<img src="{self.image.url}" style="height:50px;" />')
-        return "-"
-    image_preview.short_description = _("Фото")
-
-    def recalc_cost(self):
-        total_cost = Decimal("0.00")
-
-        for recipe_ingredient in self.recipe_ingredients.select_related("ingredient"):
-            if recipe_ingredient.ingredient.unit_cost and recipe_ingredient.amount:
-                try:
-                    total_cost += recipe_ingredient.ingredient.unit_cost * recipe_ingredient.amount
-                except (ValueError, TypeError, InvalidOperation):
-                    pass
-
-        self.estimated_cost = total_cost
-        self.save()
-
-    def get_shopping_lines(self):
-        lines = []
-        total = Decimal("0.00")
-        for ri in self.recipe_ingredients.all():
-            cost = ri.ingredient.unit_cost or Decimal("0.00")
-            lines.append(f"• {ri.ingredient.name} — {ri.amount} {ri.get_unit_display()}")
-            total += ri.amount * cost if ri.amount else Decimal("0.00")
-        return lines, total
-
-
 class RecipeStep(models.Model):
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        related_name="steps",
-        verbose_name=_("Рецепт"),
-    )
-    order = models.PositiveIntegerField(_("Порядок шага"))
+    """Шаги приготовления"""
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="steps", verbose_name=_("Рецепт"))
     text = models.TextField(_("Описание шага"))
-    image = models.ImageField(
-        _("Изображение шага"), upload_to="recipes/steps/", blank=True, null=True
-    )
+    image = models.ImageField(_("Изображение к шагу"), upload_to="recipe_steps/", blank=True, null=True)
+    order = models.PositiveIntegerField(_("Порядок выполнения"), default=0)
 
     class Meta:
+        verbose_name = _("Шаг приготовления")
+        verbose_name_plural = _("Шаги приготовления")
         ordering = ["order"]
-        verbose_name = _("Шаг рецепта")
-        verbose_name_plural = _("Шаги рецепта")
 
     def __str__(self):
-        return f"{self.recipe.title}: шаг {self.order}"
+        return f"Шаг {self.order} для {self.recipe.title}"
+
+class Ingredient(models.Model):
+    """Ингредиенты рецепта"""
+    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, related_name="ingredients", null=True, blank=True)
+    name = models.CharField(_("Название"), max_length=255)
+    amount = models.FloatField(_("Количество"), default=1)
+    unit = models.CharField(_("Единица измерения"), max_length=50, default="шт")
+
+    class Meta:
+        verbose_name = _("Ингредиент")
+        verbose_name_plural = _("Ингредиенты")
+
+    def __str__(self):
+        return f"{self.name} для {self.recipe.title}"

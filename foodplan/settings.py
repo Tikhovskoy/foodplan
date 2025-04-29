@@ -101,5 +101,4 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Телеграм-бот
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN', '')
 
-AUTH_USER_MODEL = 'users.User'
 

@@ -1,83 +1,30 @@
-from django.contrib.auth.models import AbstractUser
+# users/models.py
+
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-class User(AbstractUser):
+class TelegramUser(models.Model):
     """
-    Кастомная модель пользователя с поддержкой Telegram ID.
+    Модель для хранения данных каждого Telegram-пользователя бота.
     """
     telegram_id = models.BigIntegerField(
-        _("Telegram ID"), unique=True, null=True, blank=True
+        _("Telegram ID"), primary_key=True
+    )
+    username = models.CharField(
+        _("Username"), max_length=150, blank=True
+    )
+    first_name = models.CharField(
+        _("First name"), max_length=150, blank=True
+    )
+    last_name = models.CharField(
+        _("Last name"), max_length=150, blank=True
+    )
+    date_joined = models.DateTimeField(
+        _("Дата регистрации"), auto_now_add=True
     )
 
-class Category(models.Model):
-    """
-    Централизованная модель категорий (Веган, Без глютена, Эконом и т.п.).
-    """
-    name = models.CharField(_("Название категории"), max_length=50, unique=True)
-
-    class Meta:
-        verbose_name = _("Категория")
-        verbose_name_plural = _("Категории")
-        ordering = ['name']
-
-    def __str__(self):
-        return self.name
-
-class Profile(models.Model):
-    """
-    Расширение пользователя дополнительными полями.
-    """
-    user = models.OneToOneField(
-        User,
-        on_delete=models.CASCADE,
-        related_name='profile',
-        verbose_name=_("Пользователь")
-    )
-
-    # Новые поля предпочтений
-    vegan = models.BooleanField(
-        _("Веганское питание"),
-        default=False,
-        help_text=_("Учитывать блюда без продуктов животного происхождения")
-    )
-    gluten_free = models.BooleanField(
-        _("Без глютена"),
-        default=False,
-        help_text=_("Не включать блюда, содержащие глютен")
-    )
-    budget = models.DecimalField(
-        _("Максимальная стоимость блюда, ₽"),
-        max_digits=10,
-        decimal_places=2,
-        null=True,
-        blank=True,
-        help_text=_("Если задано, будем выбирать рецепты до этой стоимости")
-    )
-
-    categories = models.ManyToManyField(
-        Category,
-        verbose_name=_("Категории"),
-        blank=True,
-        help_text=_("Выберите категории блюд, которые вам интересны")
-    )
-    liked = models.ManyToManyField(
-        'recipes.Recipe',
-        related_name='liked_by',
-        blank=True,
-        verbose_name=_("Лайки")
-    )
-    disliked = models.ManyToManyField(
-        'recipes.Recipe',
-        related_name='disliked_by',
-        blank=True,
-        verbose_name=_("Дизлайки")
-    )
-
-    swap_count = models.PositiveSmallIntegerField(
-        _("Число замен"), default=0
-    )
+    # Подписка
     paid_until = models.DateField(
         _("Подписка до"), null=True, blank=True
     )
@@ -85,20 +32,49 @@ class Profile(models.Model):
         _("Последний бесплатный рецепт"), null=True, blank=True
     )
 
+    # Предпочтения
+    vegan = models.BooleanField(
+        _("Веганское питание"), default=False
+    )
+    gluten_free = models.BooleanField(
+        _("Без глютена"), default=False
+    )
+    budget = models.DecimalField(
+        _("Бюджет, ₽"), max_digits=10, decimal_places=2, null=True, blank=True
+    )
+
     class Meta:
-        verbose_name = _("Профиль")
-        verbose_name_plural = _("Профили")
+        verbose_name = _("Пользователь Telegram")
+        verbose_name_plural = _("Пользователи Telegram")
+        ordering = ["-date_joined"]
 
     def __str__(self):
-        return self.user.username
+        return self.username or str(self.telegram_id)
 
-    def is_active_subscriber(self) -> bool:
+    def has_active_subscription(self) -> bool:
+        """
+        Есть ли у пользователя действующая подписка?
+        """
         return bool(self.paid_until and self.paid_until >= timezone.now().date())
 
     def can_get_free_recipe(self) -> bool:
+        """
+        Можно ли сегодня выдать бесплатный рецепт?
+        """
         today = timezone.now().date()
         return not self.last_free_recipe or self.last_free_recipe < today
 
-    def mark_free_recipe_given(self) -> None:
-        self.last_free_recipe = timezone.now().date()
-        self.save(update_fields=['last_free_recipe'])
+
+class Category(models.Model):
+    """
+    Категории рецептов (например: Завтрак, Обед, Ужин, Веганское, Без глютена и т.д.)
+    """
+    name = models.CharField(_("Название категории"), max_length=100, unique=True)
+
+    class Meta:
+        verbose_name = _("Категория")
+        verbose_name_plural = _("Категории")
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name

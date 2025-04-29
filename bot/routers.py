@@ -6,6 +6,8 @@ from bot.handlers.meal_type import router as meal_type_router
 from bot.handlers.diet import router as diet_router
 from bot.handlers.budget import router as budget_router
 from bot.handlers.show_recipes import router as show_recipes_router
+from bot.handlers.category import router as category_router
+
 
 def register_routers(dp: Dispatcher):
     dp.include_router(greeting_router)
@@ -14,3 +16,4 @@ def register_routers(dp: Dispatcher):
     dp.include_router(diet_router)
     dp.include_router(budget_router)
     dp.include_router(show_recipes_router)
+    dp.include_router(category_router)

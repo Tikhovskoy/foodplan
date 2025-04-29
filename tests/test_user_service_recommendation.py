@@ -1,7 +1,7 @@
 import pytest
 from recipes.models import Recipe
 from users.models import Category
-from users.models import User, Profile
+from users.models import TelegramUser, Profile
 from bot.logic.user_service import UserService
 from bot.adapters.user_repository import DjangoUserPreferencesRepository
 

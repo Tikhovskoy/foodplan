@@ -1,45 +1,18 @@
 from django.contrib import admin
-from django.utils.translation import gettext_lazy as _
-from django.contrib.auth import get_user_model
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from users.models import TelegramUser, Category
 
-from .models import Profile, Category
-
-User = get_user_model()
-
+@admin.register(TelegramUser)
+class TelegramUserAdmin(admin.ModelAdmin):
+    list_display = ("telegram_id", "username", "first_name", "last_name", "paid_until", "has_active_subscription_display")
+    list_filter = ("paid_until",)
+    search_fields = ("telegram_id", "username", "first_name", "last_name")
+    ordering = ("-date_joined",) 
+    @admin.display(description="Активная подписка")
+    def has_active_subscription_display(self, obj):
+        return obj.has_active_subscription()
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ('name',)
-    search_fields = ('name',)
-
-
-class ProfileInline(admin.StackedInline):
-    model = Profile
-    can_delete = False
-    verbose_name_plural = _("Профили")
-    filter_horizontal = ['categories', 'liked', 'disliked']
-    # filter_horizontal = ['categories']
-
-
-@admin.register(Profile)
-class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'get_categories', 'is_active_subscriber')
-    list_filter = ['categories']
-    search_fields = ('user__username', 'user__email')
-    filter_horizontal = ['categories', 'liked', 'disliked']
-    readonly_fields = ('paid_until', 'last_free_recipe', 'swap_count')
-
-    def get_categories(self, obj: Profile) -> str:
-        return ", ".join(c.name for c in obj.categories.all())
-    get_categories.short_description = _("Категории")
-
-
-try:
-    admin.site.unregister(User)
-except admin.sites.NotRegistered:
-    pass
-
-@admin.register(User)
-class CustomUserAdmin(BaseUserAdmin):
-    inlines = (ProfileInline,)
+    list_display = ("id", "name")
+    search_fields = ("name",)
+    ordering = ("name",)

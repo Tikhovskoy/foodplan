@@ -1,4 +1,4 @@
-from users.models import User, Profile
+from users.models import TelegramUser, Profile
 from asgiref.sync import sync_to_async
 
 class ProfileService:

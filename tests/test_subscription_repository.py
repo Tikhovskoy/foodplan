@@ -2,7 +2,7 @@ import pytest
 from datetime import timedelta
 from django.utils import timezone
 
-from users.models import User, Profile
+from users.models import TelegramUser, Profile
 from bot.adapters.subscription_repository import DjangoSubscriptionRepository
 
 @pytest.mark.django_db

@@ -1,15 +1,25 @@
-from bot.logic.subscription_service import SubscriptionService
-from bot.adapters.subscription_repository import DjangoSubscriptionRepository
+# bot/services/subscription_service.py
 
-class SubscriptionServiceWrapper:
-    def __init__(self):
-        repository = DjangoSubscriptionRepository()
-        self._service = SubscriptionService(repository)
+from payments.models import Subscription, SubscriptionPlan
+from users.models import TelegramUser
+from django.utils import timezone
+from datetime import timedelta
 
-    async def check_active(self, telegram_id: int) -> bool:
-        return self._service.is_active(telegram_id)
+class SubscriptionService:
+    async def get_active_subscription(self, user: TelegramUser):
+        """Получить активную подписку пользователя."""
+        now = timezone.now()
+        return await Subscription.objects.filter(user=user, end_date__gte=now).afirst()
 
-    async def extend_subscription(self, telegram_id: int, days: int) -> None:
-        self._service.extend_subscription(telegram_id, days)
+    async def is_subscription_active(self, user: TelegramUser) -> bool:
+        """Проверить активность подписки."""
+        subscription = await self.get_active_subscription(user)
+        return subscription is not None
 
-subscription_service = SubscriptionServiceWrapper()
+    async def create_subscription(self, user: TelegramUser, plan: SubscriptionPlan):
+        """Создать новую подписку для пользователя."""
+        end_date = timezone.now() + timedelta(days=30)
+        return await Subscription.objects.acreate(user=user, plan=plan, end_date=end_date)
+
+# Инициализация
+subscription_service = SubscriptionService()
