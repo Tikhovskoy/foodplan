@@ -1,5 +1,3 @@
-# bot/services/subscription_service.py
-
 from payments.models import Subscription, SubscriptionPlan
 from users.models import TelegramUser
 from django.utils import timezone
@@ -21,5 +19,4 @@ class SubscriptionService:
         end_date = timezone.now() + timedelta(days=30)
         return await Subscription.objects.acreate(user=user, plan=plan, end_date=end_date)
 
-# Инициализация
 subscription_service = SubscriptionService()

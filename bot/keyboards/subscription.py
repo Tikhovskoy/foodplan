@@ -15,7 +15,6 @@ async def get_subscription_kb() -> InlineKeyboardMarkup:
         plans = await SubscriptionPlan.objects.all()
         
         if not plans:
-            # Если нет ни одной подписки
             keyboard.add(
                 InlineKeyboardButton(
                     text="Нет доступных подписок",
